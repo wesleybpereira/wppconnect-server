@@ -1,0 +1,56 @@
+[phases.setup]
+nixPkgs = [
+  "nodejs_22",
+  "yarn",
+  "chromium",
+  "glib", 
+  "cairo",
+  "pango",
+  "atk",
+  "gdk-pixbuf",
+  "gtk3",
+  "libdrm",
+  "xorg.libxcb",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXrandr", 
+  "xorg.libxshmfence",
+  "mesa",
+  "expat",
+  "alsa-lib",
+  "at-spi2-atk",
+  "at-spi2-core",
+  "cups",
+  "dbus",
+  "fontconfig",
+  "freetype",
+  "glibc",
+  "libuuid",
+  "nspr",
+  "nss",
+  "libxkbcommon",
+  "libvips"
+]
+
+[phases.install]
+cmds = [
+  "yarn install --frozen-lockfile",
+  "yarn add sharp --ignore-engines"
+]
+
+[phases.build]
+cmds = ["yarn build"]
+
+[phases.setup]
+cmds = ["chmod +x start.sh"]
+
+[start]
+cmd = "./start.sh"
+
+[variables]
+NODE_ENV = "production"
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true" 
+PUPPETEER_EXECUTABLE_PATH = "/nix/store/$(ls /nix/store/ | grep chromium | head -1)/bin/chromium"
