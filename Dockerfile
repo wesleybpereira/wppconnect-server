@@ -24,11 +24,27 @@ RUN yarn cache clean
 COPY . .
 RUN yarn build
 
-FROM base
+# ESTÁGIO FINAL - Começa do ZERO (não do base)
+FROM node:22.21.1-alpine
 WORKDIR /usr/src/wpp-server/
-RUN apk add --no-cache chromium
-RUN yarn cache clean
-COPY . .
-COPY --from=build /usr/src/wpp-server/ /usr/src/wpp-server/
+ENV NODE_ENV=production PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# Instala RUNTIME do vips (não -dev)
+RUN apk add --no-cache \
+    chromium \
+    vips \
+    fftw \
+    libc6-compat \
+    && rm -rf /var/cache/apk/*
+
+# Copia node_modules DO ESTÁGIO BASE (onde sharp foi compilado)
+COPY --from=base /usr/src/wpp-server/node_modules ./node_modules
+
+# Copia apenas o dist compilado
+COPY --from=build /usr/src/wpp-server/dist ./dist
+
+# Copia package.json
+COPY package.json ./
+
 EXPOSE 21465
 ENTRYPOINT ["node", "dist/server.js"]
