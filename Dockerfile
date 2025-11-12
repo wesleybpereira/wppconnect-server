@@ -1,34 +1,31 @@
-# ============ STAGE 1: Build Dependencies ============
-FROM node:22.21.1-alpine AS base
+# ============ STAGE 1: Clone e Build ============
+FROM node:22.21.1-alpine AS builder
 WORKDIR /tmp/wppconnect
 
 # Instala git e dependências de build
-RUN apk add --no-cache git vips-dev fftw-dev gcc g++ make libc6-compat
+RUN apk add --no-cache \
+    git \
+    vips-dev \
+    fftw-dev \
+    gcc \
+    g++ \
+    make \
+    libc6-compat
 
 # Clone a versão específica do wppconnect-server
 ARG WPPCONNECT_VERSION=main
 RUN git clone --depth 1 --branch ${WPPCONNECT_VERSION} \
     https://github.com/wppconnect-team/wppconnect-server.git .
 
-# Instala TODAS as dependências (dev + prod)
+# Instala TODAS as dependências
 RUN yarn install --pure-lockfile && \
     yarn add sharp --ignore-engines && \
     yarn cache clean
 
-# ============ STAGE 2: Build ============
-FROM base AS builder
-WORKDIR /tmp/wppconnect
-
 # Build do projeto
 RUN yarn build
 
-# Reinstala apenas dependências de produção com sharp
-RUN rm -rf node_modules && \
-    yarn install --production --pure-lockfile && \
-    yarn add sharp --ignore-engines && \
-    yarn cache clean
-
-# ============ STAGE 3: Runtime ============
+# ============ STAGE 2: Runtime ============
 FROM node:22.21.1-alpine
 WORKDIR /usr/src/wpp-server
 
@@ -37,7 +34,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV CHROME_BIN=/usr/bin/chromium-browser
 
-# Instala dependências de runtime
+# Instala dependências de runtime (incluindo vips)
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -51,14 +48,8 @@ RUN apk add --no-cache \
     libc6-compat && \
     rm -rf /var/cache/apk/*
 
-# Copia node_modules de produção (com sharp) do builder
-COPY --from=builder /tmp/wppconnect/node_modules ./node_modules
-
-# Copia o código compilado
-COPY --from=builder /tmp/wppconnect/dist ./dist
-
-# Copia arquivos necessários
-COPY --from=builder /tmp/wppconnect/package.json ./package.json
+# Copia TUDO do builder
+COPY --from=builder /tmp/wppconnect ./
 
 EXPOSE 21465
 
