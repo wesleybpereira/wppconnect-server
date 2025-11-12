@@ -1,19 +1,18 @@
-import { ServerOptions } from './types/ServerOptions';
-
 export default {
-  secretKey: 'THISISMYSECURETOKEN',
-  host: 'http://localhost',
-  port: '21465',
-  deviceName: 'WppConnect',
+  secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
+  host: process.env.HOST || 'http://localhost',
+  port: process.env.PORT || '21465',
+  deviceName: process.env.DEVICE_NAME || 'WppConnect',
   poweredBy: 'WPPConnect-Server',
-  startAllSession: true,
+  startAllSession: process.env.START_ALL_SESSIONS === 'true',
   tokenStoreType: 'file',
-  maxListeners: 15,
+  maxListeners: parseInt(process.env.MAX_LISTENERS || '15'),
   customUserDataDir: './userDataDir/',
   webhook: {
-    url: null,
-    autoDownload: true,
-    uploadS3: false,
+    url: process.env.WEBHOOK_URL || null,
+    autoDownload: process.env.WEBHOOK_AUTO_DOWNLOAD === 'true',
+    uploadS3: process.env.WEBHOOK_UPLOAD_S3 === 'true',
+    awsBucketName: process.env.WEBHOOK_AWS_BUCKET_NAME || null,
     readMessage: true,
     allUnreadOnStart: false,
     listenAcks: true,
@@ -23,8 +22,7 @@ export default {
     onPollResponse: true,
     onRevokedMessage: true,
     onLabelUpdated: true,
-    onSelfMessage: false,
-    ignore: ['status@broadcast'],
+    ignore: [],
   },
   websocket: {
     autoDownload: false,
@@ -35,13 +33,13 @@ export default {
     sendStatus: true,
   },
   archive: {
-    enable: false,
+    enable: process.env.ARCHIVE_ENABLE === 'true',
     waitTime: 10,
-    daysToArchive: 45,
+    daysToArchive: parseInt(process.env.ARCHIVE_DAYS_TO_ARCHIVE || '45'),
   },
   log: {
-    level: 'silly', // Before open a issue, change level to silly and retry a action
-    logger: ['console', 'file'],
+    level: process.env.LOG_LEVEL || 'silly',
+    logger: (process.env.LOG_LOGGER || 'console,file').split(','),
   },
   createOptions: {
     browserArgs: [
@@ -57,8 +55,6 @@ export default {
       '--disable-default-apps',
       '--disable-extensions',
       '--disable-sync',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
       '--disable-translate',
       '--hide-scrollbars',
       '--metrics-recording-only',
@@ -68,42 +64,32 @@ export default {
       '--ignore-certificate-errors',
       '--ignore-ssl-errors',
       '--ignore-certificate-errors-spki-list',
+      '--disable-features=LeakyPeeker'
     ],
-    /**
-     * Example of configuring the linkPreview generator
-     * If you set this to 'null', it will use global servers; however, you have the option to define your own server
-     * Clone the repository https://github.com/wppconnect-team/wa-js-api-server and host it on your server with ssl
-     *
-     * Configure the attribute as follows:
-     * linkPreviewApiServers: [ 'https://www.yourserver.com/wa-js-api-server' ]
-     */
-    linkPreviewApiServers: null,
   },
   mapper: {
     enable: false,
     prefix: 'tagone-',
   },
   db: {
-    mongodbDatabase: 'tokens',
-    mongodbCollection: '',
-    mongodbUser: '',
-    mongodbPassword: '',
-    mongodbHost: '',
-    mongoIsRemote: true,
-    mongoURLRemote: '',
-    mongodbPort: 27017,
-    redisHost: 'localhost',
-    redisPort: 6379,
-    redisPassword: '',
-    redisDb: 0,
-    redisPrefix: 'docker',
+    mongodbDatabase: process.env.MONGODB_DATABASE || 'tokens',
+    mongodbCollection: process.env.MONGODB_COLLECTION || '',
+    mongodbUser: process.env.MONGODB_USER || '',
+    mongodbPassword: process.env.MONGODB_PASSWORD || '',
+    mongodbHost: process.env.MONGODB_HOST || '',
+    mongoIsRemote: process.env.MONGODB_IS_REMOTE === 'true',
+    mongoURLRemote: process.env.MONGODB_URL_REMOTE || '',
+    mongodbPort: parseInt(process.env.MONGODB_PORT || '27017'),
+    redisHost: process.env.REDIS_HOST || 'localhost',
+    redisPort: parseInt(process.env.REDIS_PORT || '6379'),
+    redisPassword: process.env.REDIS_PASSWORD || '',
+    redisDb: parseInt(process.env.REDIS_DB || '0'),
+    redisPrefix: process.env.REDIS_PREFIX || 'docker',
   },
   aws_s3: {
-    region: 'sa-east-1' as any,
-    access_key_id: null,
-    secret_key: null,
-    defaultBucketName: null,
-    endpoint: null,
-    forcePathStyle: null,
+    region: process.env.AWS_S3_REGION || 'sa-east-1',
+    access_key_id: process.env.AWS_S3_ACCESS_KEY_ID || '',
+    secret_key: process.env.AWS_S3_SECRET_KEY || '',
+    defaultBucketName: process.env.AWS_S3_DEFAULT_BUCKET_NAME || ''
   },
-} as unknown as ServerOptions;
+}
