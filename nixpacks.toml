@@ -34,6 +34,7 @@ nixPkgs = [
   "libxkbcommon",
   "libvips"
 ]
+cmds = ["chmod +x start.sh"]
 
 [phases.install]
 cmds = [
@@ -44,13 +45,9 @@ cmds = [
 [phases.build]
 cmds = ["yarn build"]
 
-[phases.setup]
-cmds = ["chmod +x start.sh"]
-
 [start]
 cmd = "./start.sh"
 
 [variables]
 NODE_ENV = "production"
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true" 
-PUPPETEER_EXECUTABLE_PATH = "/nix/store/$(ls /nix/store/ | grep chromium | head -1)/bin/chromium"
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
