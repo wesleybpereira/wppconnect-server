@@ -2,7 +2,6 @@
 FROM node:22.21.1-alpine AS builder
 WORKDIR /tmp/wppconnect
 
-# Instala git e dependências de build
 RUN apk add --no-cache \
     git \
     vips-dev \
@@ -12,17 +11,13 @@ RUN apk add --no-cache \
     make \
     libc6-compat
 
-# Clone a versão específica do wppconnect-server
 ARG WPPCONNECT_VERSION=main
 RUN git clone --depth 1 --branch ${WPPCONNECT_VERSION} \
     https://github.com/wppconnect-team/wppconnect-server.git .
 
-# Instala TODAS as dependências
 RUN yarn install --pure-lockfile && \
-    yarn add sharp --ignore-engines && \
     yarn cache clean
 
-# Build do projeto
 RUN yarn build
 
 # ============ STAGE 2: Runtime ============
@@ -34,7 +29,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV CHROME_BIN=/usr/bin/chromium-browser
 
-# Instala dependências de runtime (incluindo vips)
+# Instala TUDO necessário (runtime + build tools temporários)
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -44,12 +39,27 @@ RUN apk add --no-cache \
     ttf-freefont \
     font-noto-emoji \
     vips \
+    vips-dev \
     fftw \
-    libc6-compat && \
+    fftw-dev \
+    libc6-compat \
+    gcc \
+    g++ \
+    make \
+    python3 && \
     rm -rf /var/cache/apk/*
 
-# Copia TUDO do builder
+# Copia tudo do builder
 COPY --from=builder /tmp/wppconnect ./
+
+# FORÇA rebuild do sharp no ambiente de runtime
+RUN cd /usr/src/wpp-server && \
+    yarn add sharp --ignore-engines --force && \
+    yarn cache clean
+
+# Remove ferramentas de build para reduzir tamanho
+RUN apk del vips-dev fftw-dev gcc g++ make python3 && \
+    rm -rf /var/cache/apk/*
 
 EXPOSE 21465
 
