@@ -1,50 +1,68 @@
+# ============ STAGE 1: Build Dependencies ============
 FROM node:22.21.1-alpine AS base
-WORKDIR /usr/src/wpp-server
-ENV NODE_ENV=production PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-COPY package.json ./
-RUN apk update && \
-    apk add --no-cache \
-    vips-dev \
-    fftw-dev \
-    gcc \
-    g++ \
-    make \
-    libc6-compat \
-    && rm -rf /var/cache/apk/*
-RUN yarn install --production --pure-lockfile && \
+WORKDIR /tmp/wppconnect
+
+# Instala git e dependências de build
+RUN apk add --no-cache git vips-dev fftw-dev gcc g++ make libc6-compat
+
+# Clone a versão específica do wppconnect-server
+ARG WPPCONNECT_VERSION=main
+RUN git clone --depth 1 --branch ${WPPCONNECT_VERSION} \
+    https://github.com/wppconnect-team/wppconnect-server.git .
+
+# Instala TODAS as dependências (dev + prod)
+RUN yarn install --pure-lockfile && \
     yarn add sharp --ignore-engines && \
     yarn cache clean
 
-FROM base AS build
-WORKDIR /usr/src/wpp-server
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-COPY package.json  ./
-RUN yarn install --production=false --pure-lockfile
-RUN yarn cache clean
-COPY . .
+# ============ STAGE 2: Build ============
+FROM base AS builder
+WORKDIR /tmp/wppconnect
+
+# Build do projeto
 RUN yarn build
 
-# ESTÁGIO FINAL - Começa do ZERO (não do base)
-FROM node:22.21.1-alpine
-WORKDIR /usr/src/wpp-server/
-ENV NODE_ENV=production PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# Reinstala apenas dependências de produção com sharp
+RUN rm -rf node_modules && \
+    yarn install --production --pure-lockfile && \
+    yarn add sharp --ignore-engines && \
+    yarn cache clean
 
-# Instala RUNTIME do vips (não -dev)
+# ============ STAGE 3: Runtime ============
+FROM node:22.21.1-alpine
+WORKDIR /usr/src/wpp-server
+
+ENV NODE_ENV=production
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV CHROME_BIN=/usr/bin/chromium-browser
+
+# Instala dependências de runtime
 RUN apk add --no-cache \
     chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji \
     vips \
     fftw \
-    libc6-compat \
-    && rm -rf /var/cache/apk/*
+    libc6-compat && \
+    rm -rf /var/cache/apk/*
 
-# Copia node_modules DO ESTÁGIO BASE (onde sharp foi compilado)
-COPY --from=base /usr/src/wpp-server/node_modules ./node_modules
+# Copia node_modules de produção (com sharp) do builder
+COPY --from=builder /tmp/wppconnect/node_modules ./node_modules
 
-# Copia apenas o dist compilado
-COPY --from=build /usr/src/wpp-server/dist ./dist
+# Copia o código compilado
+COPY --from=builder /tmp/wppconnect/dist ./dist
 
-# Copia package.json
-COPY package.json ./
+# Copia arquivos necessários
+COPY --from=builder /tmp/wppconnect/package.json ./package.json
 
 EXPOSE 21465
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:21465/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
+
 ENTRYPOINT ["node", "dist/server.js"]
