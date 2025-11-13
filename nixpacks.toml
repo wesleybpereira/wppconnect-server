@@ -1,5 +1,20 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "chromium"]
+nixPkgs = [
+  "nodejs_22", 
+  "chromium",
+  "glib",
+  "nss",
+  "nspr", 
+  "fontconfig",
+  "freetype",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXext",
+  "xorg.libXrandr",
+  "gtk3",
+  "alsa-lib",
+  "mesa"
+]
 
 [start]
 cmd = "node ./dist/server.js"
