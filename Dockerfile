@@ -145,8 +145,9 @@ COPY --from=builder /tmp/wppconnect/package.json /tmp/wppconnect/yarn.lock ./
 COPY --from=builder /tmp/wppconnect/dist ./dist
 COPY --from=builder /tmp/wppconnect/src ./src
 
-# Instala dependências de produção no runtime com sharp nativo
-RUN yarn install --production --pure-lockfile --ignore-engines && \
+# Instala TODAS as dependências (incluindo dev) pois @babel/runtime é necessário em runtime
+# mas está em devDependencies
+RUN yarn install --pure-lockfile --ignore-engines && \
     yarn cache clean
 
 EXPOSE 21465
