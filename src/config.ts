@@ -66,12 +66,14 @@ export default {
     linkPreviewApiServers: null,
     autoClose: 0, // Desabilita o auto close
     puppeteerOptions: {
-      headless: true,
+      headless: false,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process',
       ]
     }
   },

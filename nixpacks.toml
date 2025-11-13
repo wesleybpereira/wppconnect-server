@@ -3,7 +3,7 @@ nixPkgs = [
   "nodejs_22",
   "chromium",
   "wget",
-  "unzip", 
+  "unzip",
   "fontconfig",
   "glibc",
   "alsa-lib",
@@ -14,7 +14,7 @@ nixPkgs = [
   "expat",
   "freetype",
   "gdk-pixbuf",
-  "glib", 
+  "glib",
   "gtk3",
   "nspr",
   "pango",
@@ -22,7 +22,7 @@ nixPkgs = [
   "xorg.libxcb",
   "xorg.libXcomposite",
   "xorg.libXcursor",
-  "xorg.libXdamage", 
+  "xorg.libXdamage",
   "xorg.libXext",
   "xorg.libXfixes",
   "xorg.libXi",
@@ -33,7 +33,10 @@ nixPkgs = [
   "nss",
   "xorg.libxshmfence",
   "mesa",
-  "libdrm"
+  "libdrm",
+  "gconf",
+  "libappindicator-gtk3",
+  "xdg-utils"
 ]
 
 [start]
