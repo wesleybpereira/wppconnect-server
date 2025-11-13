@@ -26,7 +26,7 @@ Configure estas variáveis **obrigatórias** no Dokploy:
 ```bash
 # Puppeteer - ESSENCIAL para funcionar
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-PUPPETEER_EXECUTABLE_PATH=google-chrome-stable
+PUPPETEER_EXECUTABLE_PATH=chromium
 
 # Configuração básica
 NODE_ENV=production
@@ -149,7 +149,7 @@ info: browserClose
 ```bash
 # No container, testar se chromium funciona:
 chromium --version
-chromium --no-sandbox --headless --dump-dom https://google.com
+chromium --no-sandbox --headless --disable-gpu --dump-dom https://google.com
 ```
 
 3. **Aumentar timeout (se necessário):**
