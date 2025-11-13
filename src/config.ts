@@ -78,14 +78,15 @@ export default {
     autoClose: numericEnv(process.env.AUTO_CLOSE, 0),
     deviceSyncTimeout: numericEnv(process.env.DEVICE_SYNC_TIMEOUT, 0),
     puppeteerOptions: {
-      headless: process.env.PUPPETEER_HEADLESS === 'false' ? false : 'new',
-      executablePath: puppeteerExecutablePath,
+      headless: 'new',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--no-zygote'
       ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
     },
   },
   mapper: {

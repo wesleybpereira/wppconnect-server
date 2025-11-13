@@ -36,6 +36,8 @@ nixPkgs = [
   "xorg.libxshmfence",
   "mesa",
   "libdrm",
+  "libgbm",
+  "libvips",
   "libappindicator-gtk3",
   "xdg-utils"
 ]
