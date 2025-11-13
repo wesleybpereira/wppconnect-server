@@ -28,7 +28,7 @@ nixPkgs = [
   "xorg.libXi",
   "xorg.libXrandr",
   "xorg.libXrender",
-  "xorg.libXss",
+  "xorg.libXScrnSaver",
   "xorg.libXtst",
   "nss",
   "xorg.libxshmfence"
