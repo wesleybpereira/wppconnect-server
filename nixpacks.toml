@@ -1,19 +1,41 @@
 [phases.setup]
 nixPkgs = [
-  "nodejs_22", 
-  "chromium",
-  "glib",
-  "nss",
-  "nspr", 
+  "nodejs_22",
+  "google-chrome",
+  "wget",
+  "unzip", 
+  "fontconfig",
+  "glibc",
+  "gconf",
+  "alsa-lib",
+  "atk",
+  "cairo",
+  "cups",
+  "dbus",
+  "expat",
   "fontconfig",
   "freetype",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXext",
-  "xorg.libXrandr",
+  "gcc-unwrapped.lib",
+  "gdk-pixbuf",
+  "glib", 
   "gtk3",
-  "alsa-lib",
-  "mesa"
+  "nspr",
+  "pango",
+  "libX11",
+  "xorg.libxcb",
+  "xorg.libXcomposite",
+  "xorg.libXcursor",
+  "xorg.libXdamage", 
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXi",
+  "xorg.libXrandr",
+  "xorg.libXrender",
+  "xorg.libXss",
+  "xorg.libXtst",
+  "nss",
+  "libxshmfence",
+  "libgbm"
 ]
 
 [start]
@@ -22,4 +44,4 @@ cmd = "node ./dist/server.js"
 [variables]
 NODE_ENV = "production"
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "chromium"
+PUPPETEER_EXECUTABLE_PATH = "google-chrome-stable"

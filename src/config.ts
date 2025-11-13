@@ -46,25 +46,14 @@ export default {
   createOptions: {
     browserArgs: [
       '--no-sandbox',
-      '--disable-setuid-sandbox', 
-      '--disable-web-security',
-      '--disable-features=VizDisplayCompositor',
+      '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      '--disable-gpu-sandbox',
-      '--disable-software-rasterizer',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-      '--disable-field-trial-config',
-      '--disable-back-forward-cache',
-      '--disable-features=TranslateUI',
-      '--disable-ipc-flooding-protection',
-      '--disable-hang-monitor',
-      '--disable-prompt-on-repost',
-      '--disable-sync',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
       '--disable-extensions',
       '--disable-default-apps',
+      '--disable-sync',
       '--disable-translate',
       '--disable-background-networking',
       '--hide-scrollbars',
@@ -72,15 +61,19 @@ export default {
       '--no-first-run',
       '--no-default-browser-check',
       '--ignore-certificate-errors',
-      '--ignore-ssl-errors',
-      '--ignore-certificate-errors-spki-list',
-      '--aggressive-cache-discard',
-      '--disable-cache',
-      '--disable-application-cache',
-      '--disable-offline-load-stale-cache',
-      '--disk-cache-size=0'
+      '--ignore-ssl-errors'
     ],
     linkPreviewApiServers: null,
+    autoClose: 0, // Desabilita o auto close
+    puppeteerOptions: {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    }
   },
   mapper: {
     enable: process.env.MAPPER_ENABLE === 'true',

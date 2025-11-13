@@ -26,7 +26,7 @@ Configure estas variáveis **obrigatórias** no Dokploy:
 ```bash
 # Puppeteer - ESSENCIAL para funcionar
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-PUPPETEER_EXECUTABLE_PATH=chromium
+PUPPETEER_EXECUTABLE_PATH=google-chrome-stable
 
 # Configuração básica
 NODE_ENV=production
@@ -119,6 +119,21 @@ info: [teste] Status: QRCODE
 
 ## ⚠️ Troubleshooting
 
+### **❌ PROBLEMA: Auto Close Called**
+
+Se você vê este erro nos logs:
+```
+error: [wpp-default:client] Auto Close Called  
+info: browserClose
+```
+
+**Causa:** O browser está fechando automaticamente após 60s porque não consegue conectar.
+
+**Solução:**
+1. **Verificar se Google Chrome está funcionando** no container
+2. **Configurar autoClose = 0** (já implementado no config.ts)
+3. **Usar as dependências corretas** do nixpacks.toml
+
 ### **Se ainda não funcionar:**
 
 1. **Verificar logs de erro:**
@@ -127,6 +142,7 @@ info: [teste] Status: QRCODE
 # "Failed to launch browser"
 # "Chrome crashed"
 # "Timeout"
+# "Auto Close Called"
 ```
 
 2. **Testar manualmente:**
