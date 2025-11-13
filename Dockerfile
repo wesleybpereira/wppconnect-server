@@ -85,6 +85,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 # Instala dependências de runtime conforme documentação oficial
 RUN apt-get update && apt-get install -y \
     wget \
+    gnupg \
     unzip \
     fontconfig \
     locales \
