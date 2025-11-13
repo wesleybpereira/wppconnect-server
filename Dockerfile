@@ -143,6 +143,11 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 # Copia tudo do builder
 COPY --from=builder /tmp/wppconnect ./
 
+# Reinstala sharp no ambiente de runtime para garantir compatibilidade
+RUN rm -rf node_modules/sharp node_modules/@wppconnect-team/wppconnect/node_modules/sharp && \
+    yarn add sharp --ignore-engines && \
+    yarn cache clean
+
 EXPOSE 21465
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
