@@ -31,7 +31,9 @@ nixPkgs = [
   "xorg.libXScrnSaver",
   "xorg.libXtst",
   "nss",
-  "xorg.libxshmfence"
+  "xorg.libxshmfence",
+  "mesa",
+  "libdrm"
 ]
 
 [start]
