@@ -1,5 +1,10 @@
 import { ServerOptions } from './types/ServerOptions';
 
+const numericEnv = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 export default {
   secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
   host: process.env.HOST || 'http://localhost',
@@ -9,7 +14,7 @@ export default {
   startAllSession: process.env.START_ALL_SESSIONS === 'true' || false,
   tokenStoreType: 'file',
   maxListeners: parseInt(process.env.MAX_LISTENERS || '15'),
-  customUserDataDir: './userDataDir/',
+  customUserDataDir: process.env.CUSTOM_USER_DATA_DIR || './userDataDir/',
   webhook: {
     url: process.env.WEBHOOK_URL || null,
     autoDownload: process.env.WEBHOOK_AUTO_DOWNLOAD !== 'false',
@@ -64,18 +69,17 @@ export default {
       '--ignore-ssl-errors'
     ],
     linkPreviewApiServers: null,
-    autoClose: 0, // Desabilita o auto close
-    puppeteerOptions: {
-      headless: false,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process',
-      ]
-    }
+      autoClose: numericEnv(process.env.AUTO_CLOSE, 0),
+      deviceSyncTimeout: numericEnv(process.env.DEVICE_SYNC_TIMEOUT, 0),
+      puppeteerOptions: {
+        headless: process.env.PUPPETEER_HEADLESS === 'false' ? false : 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+      },
   },
   mapper: {
     enable: process.env.MAPPER_ENABLE === 'true',
