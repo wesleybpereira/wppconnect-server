@@ -2,10 +2,13 @@
 nixPkgs = [
   "nodejs_22",
   "chromium",
+  "cacert",
   "wget",
   "unzip",
   "fontconfig",
+  "liberation_ttf",
   "glibc",
+  "glibcLocales",
   "alsa-lib",
   "atk",
   "cairo",
@@ -39,7 +42,7 @@ nixPkgs = [
 ]
 
 [start]
-cmd = "node ./dist/server.js"
+cmd = "bash ./scripts/start.sh"
 
 [variables]
 NODE_ENV = "production"

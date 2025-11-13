@@ -5,6 +5,12 @@ const numericEnv = (value: string | undefined, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const puppeteerExecutablePath =
+  process.env.PUPPETEER_EXECUTABLE_PATH &&
+  process.env.PUPPETEER_EXECUTABLE_PATH.trim().length > 0
+    ? process.env.PUPPETEER_EXECUTABLE_PATH
+    : undefined;
+
 export default {
   secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
   host: process.env.HOST || 'http://localhost',
@@ -69,17 +75,18 @@ export default {
       '--ignore-ssl-errors'
     ],
     linkPreviewApiServers: null,
-      autoClose: numericEnv(process.env.AUTO_CLOSE, 0),
-      deviceSyncTimeout: numericEnv(process.env.DEVICE_SYNC_TIMEOUT, 0),
-      puppeteerOptions: {
-        headless: process.env.PUPPETEER_HEADLESS === 'false' ? false : 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-        ],
-      },
+    autoClose: numericEnv(process.env.AUTO_CLOSE, 0),
+    deviceSyncTimeout: numericEnv(process.env.DEVICE_SYNC_TIMEOUT, 0),
+    puppeteerOptions: {
+      headless: process.env.PUPPETEER_HEADLESS === 'false' ? false : 'new',
+      executablePath: puppeteerExecutablePath,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+    },
   },
   mapper: {
     enable: process.env.MAPPER_ENABLE === 'true',
