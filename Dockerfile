@@ -140,11 +140,14 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
     && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia tudo do builder
-COPY --from=builder /tmp/wppconnect ./
+# Copia tudo do builder EXCETO node_modules
+COPY --from=builder /tmp/wppconnect/package.json /tmp/wppconnect/yarn.lock ./
+COPY --from=builder /tmp/wppconnect/dist ./dist
+COPY --from=builder /tmp/wppconnect/public ./public
+COPY --from=builder /tmp/wppconnect/src ./src
 
-# Reinstala dependências no ambiente de runtime para garantir compatibilidade com libvips
-RUN yarn install --pure-lockfile --ignore-engines && \
+# Instala dependências de produção no runtime com sharp nativo
+RUN yarn install --production --pure-lockfile --ignore-engines && \
     yarn cache clean
 
 EXPOSE 21465
