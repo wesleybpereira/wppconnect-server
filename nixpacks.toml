@@ -37,7 +37,7 @@ nixPkgs = [
   "mesa",
   "libdrm",
   "libgbm",
-  "libvips",
+  "vips",
   "libappindicator-gtk3",
   "xdg-utils"
 ]
