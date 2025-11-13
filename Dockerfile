@@ -143,7 +143,6 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 # Copia tudo do builder EXCETO node_modules
 COPY --from=builder /tmp/wppconnect/package.json /tmp/wppconnect/yarn.lock ./
 COPY --from=builder /tmp/wppconnect/dist ./dist
-COPY --from=builder /tmp/wppconnect/public ./public
 COPY --from=builder /tmp/wppconnect/src ./src
 
 # Instala dependências de produção no runtime com sharp nativo
