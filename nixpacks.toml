@@ -2,7 +2,6 @@
 nixPkgs = [
   "nodejs_22",
   "chromium",
-  "cacert",
   "wget",
   "unzip",
   "fontconfig",
