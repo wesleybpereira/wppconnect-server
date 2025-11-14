@@ -148,6 +148,7 @@ COPY --from=builder /tmp/wppconnect/src ./src
 # Instala TODAS as dependências (incluindo dev) pois @babel/runtime é necessário em runtime
 # mas está em devDependencies
 RUN yarn install --pure-lockfile --ignore-engines && \
+    yarn add @babel/runtime --ignore-engines && \
     yarn cache clean
 
 EXPOSE 21465
