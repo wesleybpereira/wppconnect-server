@@ -1,60 +1,65 @@
 import { ServerOptions } from './types/ServerOptions';
 
-const numericEnv = (value: string | undefined, fallback: number) => {
+// Helper que acessa process.env de uma forma que evita que o bundler/babel avalie em build-time
+const env = (key: string): string | undefined => {
+  const p = (global as any).process || (typeof process !== 'undefined' ? (process as any) : undefined);
+  return p && p.env ? p.env[key] : undefined;
+};
+
+const numericEnv = (key: string, fallback: number): number => {
+  const value = env(key);
+  if (!value) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-// Função para obter configuração em runtime (evita hardcoding em build time)
-const getConfig = (): ServerOptions => {
-  const puppeteerExecutablePath =
-    process.env.PUPPETEER_EXECUTABLE_PATH &&
-    process.env.PUPPETEER_EXECUTABLE_PATH.trim().length > 0
-      ? process.env.PUPPETEER_EXECUTABLE_PATH
-      : undefined;
+const puppeteerExecutablePath =
+  env('PUPPETEER_EXECUTABLE_PATH') && env('PUPPETEER_EXECUTABLE_PATH')!.trim().length > 0
+    ? env('PUPPETEER_EXECUTABLE_PATH')
+    : undefined;
 
-  return {
-    secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
-  host: process.env.HOST || 'http://localhost',
-  port: process.env.PORT || '21465',
-  deviceName: process.env.DEVICE_NAME || 'WppConnect',
+export default {
+  secretKey: env('SECRET_KEY') || 'THISISMYSECURETOKEN',
+  host: env('HOST') || 'http://localhost',
+  port: env('PORT') || '21465',
+  deviceName: env('DEVICE_NAME') || 'WppConnect',
   poweredBy: 'WPPConnect-Server',
-  startAllSession: process.env.START_ALL_SESSIONS === 'true' || false,
+  startAllSession: env('START_ALL_SESSIONS') === 'true' || false,
   tokenStoreType: 'file',
-  maxListeners: parseInt(process.env.MAX_LISTENERS || '15'),
-  customUserDataDir: process.env.CUSTOM_USER_DATA_DIR || './userDataDir/',
+  maxListeners: parseInt(env('MAX_LISTENERS') || '15'),
+  customUserDataDir: env('CUSTOM_USER_DATA_DIR') || './userDataDir/',
   webhook: {
-    url: process.env.WEBHOOK_URL || null,
-    autoDownload: process.env.WEBHOOK_AUTO_DOWNLOAD !== 'false',
-    uploadS3: process.env.WEBHOOK_UPLOAD_S3 === 'true',
-    readMessage: process.env.WEBHOOK_READ_MESSAGE !== 'false',
-    allUnreadOnStart: process.env.WEBHOOK_ALL_UNREAD_ON_START === 'true',
-    listenAcks: process.env.WEBHOOK_LISTEN_ACKS !== 'false',
-    onPresenceChanged: process.env.WEBHOOK_ON_PRESENCE_CHANGED !== 'false',
-    onParticipantsChanged: process.env.WEBHOOK_ON_PARTICIPANTS_CHANGED !== 'false',
-    onReactionMessage: process.env.WEBHOOK_ON_REACTION_MESSAGE !== 'false',
-    onPollResponse: process.env.WEBHOOK_ON_POLL_RESPONSE !== 'false',
-    onRevokedMessage: process.env.WEBHOOK_ON_REVOKED_MESSAGE !== 'false',
-    onLabelUpdated: process.env.WEBHOOK_ON_LABEL_UPDATED !== 'false',
-    onSelfMessage: process.env.WEBHOOK_ON_SELF_MESSAGE === 'true',
+    url: env('WEBHOOK_URL') || null,
+    autoDownload: env('WEBHOOK_AUTO_DOWNLOAD') !== 'false',
+    uploadS3: env('WEBHOOK_UPLOAD_S3') === 'true',
+    readMessage: env('WEBHOOK_READ_MESSAGE') !== 'false',
+    allUnreadOnStart: env('WEBHOOK_ALL_UNREAD_ON_START') === 'true',
+    listenAcks: env('WEBHOOK_LISTEN_ACKS') !== 'false',
+    onPresenceChanged: env('WEBHOOK_ON_PRESENCE_CHANGED') !== 'false',
+    onParticipantsChanged: env('WEBHOOK_ON_PARTICIPANTS_CHANGED') !== 'false',
+    onReactionMessage: env('WEBHOOK_ON_REACTION_MESSAGE') !== 'false',
+    onPollResponse: env('WEBHOOK_ON_POLL_RESPONSE') !== 'false',
+    onRevokedMessage: env('WEBHOOK_ON_REVOKED_MESSAGE') !== 'false',
+    onLabelUpdated: env('WEBHOOK_ON_LABEL_UPDATED') !== 'false',
+    onSelfMessage: env('WEBHOOK_ON_SELF_MESSAGE') === 'true',
     ignore: ['status@broadcast'],
   },
   websocket: {
-    autoDownload: process.env.WEBSOCKET_AUTO_DOWNLOAD === 'true',
-    uploadS3: process.env.WEBSOCKET_UPLOAD_S3 === 'true',
+    autoDownload: env('WEBSOCKET_AUTO_DOWNLOAD') === 'true',
+    uploadS3: env('WEBSOCKET_UPLOAD_S3') === 'true',
   },
   chatwoot: {
-    sendQrCode: process.env.CHATWOOT_SEND_QR_CODE !== 'false',
-    sendStatus: process.env.CHATWOOT_SEND_STATUS !== 'false',
+    sendQrCode: env('CHATWOOT_SEND_QR_CODE') !== 'false',
+    sendStatus: env('CHATWOOT_SEND_STATUS') !== 'false',
   },
   archive: {
-    enable: process.env.ARCHIVE_ENABLE === 'true',
-    waitTime: parseInt(process.env.ARCHIVE_WAIT_TIME || '10'),
-    daysToArchive: parseInt(process.env.ARCHIVE_DAYS_TO_ARCHIVE || '45'),
+    enable: env('ARCHIVE_ENABLE') === 'true',
+    waitTime: parseInt(env('ARCHIVE_WAIT_TIME') || '10'),
+    daysToArchive: parseInt(env('ARCHIVE_DAYS_TO_ARCHIVE') || '45'),
   },
   log: {
-    level: process.env.LOG_LEVEL || 'silly',
-    logger: (process.env.LOG_LOGGER || 'console,file').split(','),
+    level: env('LOG_LEVEL') || 'silly',
+    logger: (env('LOG_LOGGER') || 'console,file').split(','),
   },
   createOptions: {
     browserArgs: [
@@ -77,8 +82,8 @@ const getConfig = (): ServerOptions => {
       '--ignore-ssl-errors'
     ],
     linkPreviewApiServers: null,
-    autoClose: numericEnv(process.env.AUTO_CLOSE, 0),
-    deviceSyncTimeout: numericEnv(process.env.DEVICE_SYNC_TIMEOUT, 0),
+    autoClose: numericEnv('AUTO_CLOSE', 0),
+    deviceSyncTimeout: numericEnv('DEVICE_SYNC_TIMEOUT', 0),
     puppeteerOptions: {
       headless: 'new',
       args: [
@@ -88,48 +93,34 @@ const getConfig = (): ServerOptions => {
         '--disable-gpu',
         '--no-zygote'
       ],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+      executablePath: puppeteerExecutablePath
     },
   },
   mapper: {
-    enable: process.env.MAPPER_ENABLE === 'true',
-    prefix: process.env.MAPPER_PREFIX || 'tagone-',
+    enable: env('MAPPER_ENABLE') === 'true',
+    prefix: env('MAPPER_PREFIX') || 'tagone-',
   },
   db: {
-    mongodbDatabase: process.env.MONGODB_DATABASE || 'tokens',
-    mongodbCollection: process.env.MONGODB_COLLECTION || '',
-    mongodbUser: process.env.MONGODB_USER || '',
-    mongodbPassword: process.env.MONGODB_PASSWORD || '',
-    mongodbHost: process.env.MONGODB_HOST || '',
-    mongoIsRemote: process.env.MONGODB_IS_REMOTE === 'true',
-    mongoURLRemote: process.env.MONGODB_URL_REMOTE || '',
-    mongodbPort: parseInt(process.env.MONGODB_PORT || '27017'),
-    redisHost: process.env.REDIS_HOST || 'localhost',
-    redisPort: parseInt(process.env.REDIS_PORT || '6379'),
-    redisPassword: process.env.REDIS_PASSWORD || '',
-    redisDb: parseInt(process.env.REDIS_DB || '0'),
-    redisPrefix: process.env.REDIS_PREFIX || 'docker',
+    mongodbDatabase: env('MONGODB_DATABASE') || 'tokens',
+    mongodbCollection: env('MONGODB_COLLECTION') || '',
+    mongodbUser: env('MONGODB_USER') || '',
+    mongodbPassword: env('MONGODB_PASSWORD') || '',
+    mongodbHost: env('MONGODB_HOST') || '',
+    mongoIsRemote: env('MONGODB_IS_REMOTE') === 'true',
+    mongoURLRemote: env('MONGODB_URL_REMOTE') || '',
+    mongodbPort: parseInt(env('MONGODB_PORT') || '27017'),
+    redisHost: env('REDIS_HOST') || 'localhost',
+    redisPort: parseInt(env('REDIS_PORT') || '6379'),
+    redisPassword: env('REDIS_PASSWORD') || '',
+    redisDb: parseInt(env('REDIS_DB') || '0'),
+    redisPrefix: env('REDIS_PREFIX') || 'docker',
   },
   aws_s3: {
-    region: (process.env.AWS_S3_REGION || 'sa-east-1') as any,
-    access_key_id: process.env.AWS_S3_ACCESS_KEY_ID || null,
-    secret_key: process.env.AWS_S3_SECRET_KEY || null,
-    defaultBucketName: process.env.AWS_S3_DEFAULT_BUCKET_NAME || null,
-    endpoint: process.env.AWS_S3_ENDPOINT || null,
-    forcePathStyle: process.env.AWS_S3_FORCE_PATH_STYLE === 'true' || null,
+    region: (env('AWS_S3_REGION') || 'sa-east-1') as any,
+    access_key_id: env('AWS_S3_ACCESS_KEY_ID') || null,
+    secret_key: env('AWS_S3_SECRET_KEY') || null,
+    defaultBucketName: env('AWS_S3_DEFAULT_BUCKET_NAME') || null,
+    endpoint: env('AWS_S3_ENDPOINT') || null,
+    forcePathStyle: env('AWS_S3_FORCE_PATH_STYLE') === 'true' || null,
   },
-  } as unknown as ServerOptions;
-};
-
-// Exporta a função, não o resultado - será chamada no primeiro uso
-let cachedConfig: ServerOptions | null = null;
-const config = new Proxy({} as ServerOptions, {
-  get(target, prop) {
-    if (!cachedConfig) {
-      cachedConfig = getConfig();
-    }
-    return cachedConfig[prop as keyof ServerOptions];
-  }
-});
-
-export default config;
+} as unknown as ServerOptions;
