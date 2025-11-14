@@ -145,11 +145,13 @@ COPY --from=builder /tmp/wppconnect/package.json /tmp/wppconnect/yarn.lock ./
 COPY --from=builder /tmp/wppconnect/dist ./dist
 COPY --from=builder /tmp/wppconnect/src ./src
 
-# Instala TODAS as dependências (incluindo dev) pois @babel/runtime é necessário em runtime
-# mas está em devDependencies
+# Instala TODAS as dependências e força reinstalação do sharp
 RUN yarn install --pure-lockfile --ignore-engines && \
     yarn add @babel/runtime --ignore-engines && \
-    cd /usr/src/wpp-server/node_modules/@wppconnect-team/wppconnect && npm rebuild sharp --verbose && \
+    rm -rf node_modules/@wppconnect-team/wppconnect/node_modules/sharp && \
+    cd node_modules/@wppconnect-team/wppconnect && \
+    npm install sharp@latest --no-save && \
+    cd /usr/src/wpp-server && \
     yarn cache clean
 
 EXPOSE 21465
