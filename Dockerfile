@@ -1,7 +1,6 @@
 FROM node:22.21.1-bullseye-slim
 WORKDIR /usr/src/wpp-server
 
-ENV NODE_ENV=production
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
