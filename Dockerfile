@@ -149,6 +149,7 @@ COPY --from=builder /tmp/wppconnect/src ./src
 # mas está em devDependencies
 RUN yarn install --pure-lockfile --ignore-engines && \
     yarn add @babel/runtime --ignore-engines && \
+    npm rebuild sharp --verbose && \
     yarn cache clean
 
 EXPOSE 21465
