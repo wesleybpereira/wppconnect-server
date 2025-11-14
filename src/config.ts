@@ -5,14 +5,16 @@ const numericEnv = (value: string | undefined, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const puppeteerExecutablePath =
-  process.env.PUPPETEER_EXECUTABLE_PATH &&
-  process.env.PUPPETEER_EXECUTABLE_PATH.trim().length > 0
-    ? process.env.PUPPETEER_EXECUTABLE_PATH
-    : undefined;
+// Função para obter configuração em runtime (evita hardcoding em build time)
+const getConfig = (): ServerOptions => {
+  const puppeteerExecutablePath =
+    process.env.PUPPETEER_EXECUTABLE_PATH &&
+    process.env.PUPPETEER_EXECUTABLE_PATH.trim().length > 0
+      ? process.env.PUPPETEER_EXECUTABLE_PATH
+      : undefined;
 
-export default {
-  secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
+  return {
+    secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
   host: process.env.HOST || 'http://localhost',
   port: process.env.PORT || '21465',
   deviceName: process.env.DEVICE_NAME || 'WppConnect',
@@ -116,4 +118,8 @@ export default {
     endpoint: process.env.AWS_S3_ENDPOINT || null,
     forcePathStyle: process.env.AWS_S3_FORCE_PATH_STYLE === 'true' || null,
   },
-} as unknown as ServerOptions;
+  } as unknown as ServerOptions;
+};
+
+// Exporta a configuração avaliada em runtime
+export default getConfig();
