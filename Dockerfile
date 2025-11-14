@@ -80,7 +80,7 @@ RUN yarn build
 
 EXPOSE 21465
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:21465/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
+# Healthcheck removido - Dokploy/Traefik fará o health check via HTTP
+# Se necessário, configure no Dokploy: GET http://container:21465/api/health
 
 ENTRYPOINT ["node", "dist/server.js"]
