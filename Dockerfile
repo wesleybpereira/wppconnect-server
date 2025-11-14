@@ -65,10 +65,10 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
     && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone do repositório
-ARG WPPCONNECT_VERSION=main
+# Clone do repositório (fork customizado)
+ARG WPPCONNECT_VERSION=dokploy-custom
 RUN git clone --depth 1 --branch ${WPPCONNECT_VERSION} \
-    https://github.com/wppconnect-team/wppconnect-server.git . && \
+    https://github.com/wesleybpereira/wppconnect-server.git . && \
     rm -rf .git
 
 # Instala dependências (sharp será compilado nativamente contra libvips do sistema)
