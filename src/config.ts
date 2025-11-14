@@ -121,5 +121,15 @@ const getConfig = (): ServerOptions => {
   } as unknown as ServerOptions;
 };
 
-// Exporta a configuração avaliada em runtime
-export default getConfig();
+// Exporta a função, não o resultado - será chamada no primeiro uso
+let cachedConfig: ServerOptions | null = null;
+const config = new Proxy({} as ServerOptions, {
+  get(target, prop) {
+    if (!cachedConfig) {
+      cachedConfig = getConfig();
+    }
+    return cachedConfig[prop as keyof ServerOptions];
+  }
+});
+
+export default config;

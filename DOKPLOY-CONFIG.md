@@ -1,6 +1,34 @@
 # Configuração do WPPConnect no Dokploy
 
-## Problema Identificado
+## ✅ Problemas Resolvidos
+
+### 1. SECRET_KEY não sendo reconhecida
+**Causa**: Babel estava compilando o objeto de configuração em **build time** e **hardcoding** os valores padrão (como `'THISISMYSECURETOKEN'`), ignorando as variáveis de ambiente que só existem em **runtime**.
+
+**Solução**: Refatorado `src/config.ts` para usar uma função `getConfig()` que é avaliada em **runtime**, garantindo que `process.env.SECRET_KEY` seja lido do container e não do ambiente de build.
+
+**Antes**:
+```typescript
+export default {
+  secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
+  // ... Babel compilava isso para: secretKey: 'THISISMYSECURETOKEN'
+}
+```
+
+**Depois**:
+```typescript
+const getConfig = (): ServerOptions => {
+  return {
+    secretKey: process.env.SECRET_KEY || 'THISISMYSECURETOKEN',
+    // ... Agora é avaliado quando o servidor inicia
+  }
+};
+export default getConfig();
+```
+
+---
+
+## Problema Identificado (Rede)
 
 O servidor está rodando corretamente (logs confirmam "Server is running on port: 21465"), mas o Bad Gateway ocorre porque:
 
