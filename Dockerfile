@@ -78,6 +78,13 @@ RUN yarn install --pure-lockfile --ignore-engines && \
 # Build do projeto
 RUN yarn build
 
+# Aplica patches para corrigir bugs do upstream
+COPY patches/ /tmp/patches/
+RUN if [ -f /tmp/patches/fix-close-session.patch ]; then \
+    cd /usr/src/wpp-server && \
+    node -e "const fs=require('fs'); const file='dist/controller/sessionController.js'; let content=fs.readFileSync(file,'utf8'); content=content.replace('await req.client.close();','try{if(req.client&&typeof req.client.close===\"function\"){await req.client.close();}if(req.client&&req.client.page&&typeof req.client.page.close===\"function\"){await req.client.page.close().catch(()=>{});}}catch(e){console.error(\"Error closing client:\",e);}'); fs.writeFileSync(file,content);"; \
+    fi
+
 # Cria wrapper que injeta variáveis de ambiente em runtime (após build)
 RUN cat > /usr/src/wpp-server/dist/config-runtime.js << 'EOFCONFIG'
 "use strict";

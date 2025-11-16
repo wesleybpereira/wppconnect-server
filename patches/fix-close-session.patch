@@ -1,0 +1,34 @@
+--- a/dist/controller/sessionController.js
++++ b/dist/controller/sessionController.js
+@@ -253,18 +253,28 @@ async function closeSession(req, res) {
+     const session = req.session;
+     try {
+         if (clientsArray[session].status === null) {
+             return await res
+                 .status(200)
+                 .json({ status: true, message: 'Session successfully closed' });
+         }
+         else {
+             clientsArray[session] = { status: null };
+-            await req.client.close();
++            
++            // Tenta fechar o client de várias formas
++            try {
++                if (req.client && typeof req.client.close === 'function') {
++                    await req.client.close();
++                }
++                if (req.client && req.client.page && typeof req.client.page.close === 'function') {
++                    await req.client.page.close().catch(() => {});
++                }
++            } catch (closeError) {
++                console.error('Error closing client:', closeError);
++            }
++            
+             req.io.emit('whatsapp-status', false);
+             callWebHook(req.client, req, 'closesession', {
+                 message: `Session: ${session} disconnected`,
+                 connected: false,
+             });
+             return await res
+                 .status(200)
+                 .json({ status: true, message: 'Session successfully closed' });
