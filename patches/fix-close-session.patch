@@ -1,34 +1,75 @@
---- a/dist/controller/sessionController.js
-+++ b/dist/controller/sessionController.js
-@@ -253,18 +253,28 @@ async function closeSession(req, res) {
-     const session = req.session;
-     try {
-         if (clientsArray[session].status === null) {
-             return await res
-                 .status(200)
-                 .json({ status: true, message: 'Session successfully closed' });
-         }
-         else {
-             clientsArray[session] = { status: null };
--            await req.client.close();
-+            
-+            // Tenta fechar o client de várias formas
-+            try {
-+                if (req.client && typeof req.client.close === 'function') {
-+                    await req.client.close();
-+                }
-+                if (req.client && req.client.page && typeof req.client.page.close === 'function') {
-+                    await req.client.page.close().catch(() => {});
-+                }
-+            } catch (closeError) {
-+                console.error('Error closing client:', closeError);
-+            }
-+            
-             req.io.emit('whatsapp-status', false);
-             callWebHook(req.client, req, 'closesession', {
-                 message: `Session: ${session} disconnected`,
-                 connected: false,
-             });
-             return await res
-                 .status(200)
-                 .json({ status: true, message: 'Session successfully closed' });
+# Patches aplicados ao WPPConnect Server upstream
+
+## Patch 1: Fix close-session robustness
+
+**Arquivo:** `dist/controller/sessionController.js`
+
+**Problema:** 
+- Close-session falha com "Cannot read properties of undefined (reading 'status')"
+- Close-session falha com "req.client.close is not a function"
+- Não funciona corretamente nos estados INITIALIZING ou QRCODE
+
+**Correção 1 - Verificação de existência do cliente:**
+```javascript
+// ANTES:
+if (clientsArray[session].status === null)
+
+// DEPOIS:
+if (!clientsArray[session] || clientsArray[session].status === null)
+```
+
+**Correção 2 - Safe close com try-catch:**
+```javascript
+// ANTES:
+await req.client.close();
+
+// DEPOIS:
+try {
+  if (req.client && typeof req.client.close === "function") {
+    await req.client.close();
+  }
+  if (req.client && req.client.page && typeof req.client.page.close === "function") {
+    await req.client.page.close().catch(() => {});
+  }
+} catch (e) {
+  console.error("Error closing client:", e);
+}
+```
+
+**Resultado:** Close-session funciona em qualquer estado (INITIALIZING, QRCODE, CONNECTED) sem erros.
+
+---
+
+## Patch 2: Remove Chrome profile locks before browser launch
+
+**Arquivo:** `dist/util/createSessionUtil.js`
+
+**Problema:**
+- Chrome deixa arquivos de lock (SingletonLock, SingletonCookie, SingletonSocket) no profile
+- Ao reiniciar container, Chrome não consegue iniciar: "profile appears to be in use by another process"
+- Locks persistem no volume wppconnect-sessions
+
+**Correção - Remover locks antes de criar browser:**
+```javascript
+// CÓDIGO INSERIDO ANTES DE: const wppClient = await (0, _wppconnect.create)(
+
+const lockFiles = ["SingletonLock", "SingletonCookie", "SingletonSocket"];
+const userDataDir = req.serverOptions.customUserDataDir + session;
+lockFiles.forEach(f => {
+  try {
+    const p = require("path").join(userDataDir, f);
+    if (require("fs").existsSync(p)) {
+      require("fs").unlinkSync(p);
+    }
+  } catch (e) {}
+});
+```
+
+**Resultado:** Chrome inicia corretamente mesmo após restart abrupto do container.
+
+---
+
+## Aplicação dos patches
+
+Os patches são aplicados automaticamente durante o Docker build via inline scripts Node.js.
+Ver seção "Aplica patches para corrigir bugs do upstream" no Dockerfile.

@@ -80,10 +80,30 @@ RUN yarn build
 
 # Aplica patches para corrigir bugs do upstream
 COPY patches/ /tmp/patches/
-RUN if [ -f /tmp/patches/fix-close-session.patch ]; then \
-    cd /usr/src/wpp-server && \
-    node -e "const fs=require('fs'); const file='dist/controller/sessionController.js'; let content=fs.readFileSync(file,'utf8'); content=content.replace('await req.client.close();','try{if(req.client&&typeof req.client.close===\"function\"){await req.client.close();}if(req.client&&req.client.page&&typeof req.client.page.close===\"function\"){await req.client.page.close().catch(()=>{});}}catch(e){console.error(\"Error closing client:\",e);}'); fs.writeFileSync(file,content);"; \
-    fi
+RUN cd /usr/src/wpp-server && \
+    # Patch 1: Fix close-session
+    node -e "const fs=require('fs'); \
+    const file='dist/controller/sessionController.js'; \
+    let content=fs.readFileSync(file,'utf8'); \
+    content=content.replace( \
+      'await req.client.close();', \
+      'try{if(req.client&&typeof req.client.close===\"function\"){await req.client.close();}if(req.client&&req.client.page&&typeof req.client.page.close===\"function\"){await req.client.page.close().catch(()=>{});}}catch(e){console.error(\"Error closing client:\",e);}' \
+    ); \
+    content=content.replace( \
+      /if \(clientsArray\[session\]\.status === null\)/g, \
+      'if (!clientsArray[session] || clientsArray[session].status === null)' \
+    ); \
+    fs.writeFileSync(file,content);" && \
+    # Patch 2: Remove Chrome locks before browser launch
+    node -e "const fs=require('fs'); \
+    const file='dist/util/createSessionUtil.js'; \
+    let content=fs.readFileSync(file,'utf8'); \
+    const lockRemovalCode='const lockFiles=[\"SingletonLock\",\"SingletonCookie\",\"SingletonSocket\"];const userDataDir=req.serverOptions.customUserDataDir+session;lockFiles.forEach(f=>{try{const p=require(\"path\").join(userDataDir,f);if(require(\"fs\").existsSync(p)){require(\"fs\").unlinkSync(p);}}catch(e){}});'; \
+    content=content.replace( \
+      /const wppClient = await \(0, _wppconnect.create\)\(/, \
+      lockRemovalCode+'const wppClient = await (0, _wppconnect.create)(' \
+    ); \
+    fs.writeFileSync(file,content);"
 
 # Cria wrapper que injeta variáveis de ambiente em runtime (após build)
 RUN cat > /usr/src/wpp-server/dist/config-runtime.js << 'EOFCONFIG'
