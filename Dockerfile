@@ -117,8 +117,9 @@ const runtimeConfig = {
   
   createOptions: {
     ...originalConfig.createOptions,
+    // SEMPRE define headless: true (servidor sem GUI), pode sobrescrever com env HEADLESS
+    headless: env('HEADLESS') !== undefined ? boolEnv('HEADLESS', true) : true,
     // Sobrescreve apenas se env var existir (!== undefined)
-    ...(env('HEADLESS') !== undefined && { headless: boolEnv('HEADLESS', true) }),
     ...(env('AUTO_CLOSE') !== undefined && { autoClose: numericEnv('AUTO_CLOSE', 60000) }),
     ...(env('DEVICE_SYNC_TIMEOUT') !== undefined && { deviceSyncTimeout: numericEnv('DEVICE_SYNC_TIMEOUT', 120000) }),
     ...(env('PUPPETEER_EXECUTABLE_PATH') !== undefined && {
