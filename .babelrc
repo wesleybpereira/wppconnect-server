@@ -13,7 +13,9 @@
       {
         "targets": {
           "node": "current"
-        }
+        },
+        "modules": "commonjs",
+        "loose": false
       }
     ],
     [
