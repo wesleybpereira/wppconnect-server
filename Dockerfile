@@ -85,34 +85,44 @@ RUN cat > /usr/src/wpp-server/dist/config-runtime.js << 'EOFCONFIG'
 // Importa o config original compilado
 const originalConfig = require('./config.js').default || require('./config.js');
 
-// Função helper para ler env
-const env = (key, fallback = null) => process.env[key] || fallback;
+// Função helper para ler env (retorna undefined se não existir)
+const env = (key) => {
+  return process.env[key] !== undefined ? process.env[key] : undefined;
+};
+
 const numericEnv = (key, fallback) => {
   const value = env(key);
-  if (!value) return fallback;
+  if (value === undefined) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const boolEnv = (key, fallback) => {
+  const value = env(key);
+  if (value === undefined) return fallback;
+  return value === 'true' || value === '1';
 };
 
 // Cria config com variáveis de ambiente sobrescrevendo defaults
 const runtimeConfig = {
   ...originalConfig,
-  // Sobrescreve apenas se env var existir
-  ...(env('SECRET_KEY') && { secretKey: env('SECRET_KEY') }),
-  ...(env('HOST') && { host: env('HOST') }),
-  ...(env('PORT') && { port: env('PORT') }),
-  ...(env('DEVICE_NAME') && { deviceName: env('DEVICE_NAME') }),
-  ...(env('START_ALL_SESSIONS') && { startAllSession: env('START_ALL_SESSIONS') === 'true' }),
-  ...(env('MAX_LISTENERS') && { maxListeners: parseInt(env('MAX_LISTENERS')) }),
-  ...(env('CUSTOM_USER_DATA_DIR') && { customUserDataDir: env('CUSTOM_USER_DATA_DIR') }),
+  // Sobrescreve apenas se env var existir (!== undefined)
+  ...(env('SECRET_KEY') !== undefined && { secretKey: env('SECRET_KEY') }),
+  ...(env('HOST') !== undefined && { host: env('HOST') }),
+  ...(env('PORT') !== undefined && { port: env('PORT') }),
+  ...(env('DEVICE_NAME') !== undefined && { deviceName: env('DEVICE_NAME') }),
+  ...(env('START_ALL_SESSIONS') !== undefined && { startAllSession: boolEnv('START_ALL_SESSIONS', true) }),
+  ...(env('MAX_LISTENERS') !== undefined && { maxListeners: numericEnv('MAX_LISTENERS', 15) }),
+  ...(env('CUSTOM_USER_DATA_DIR') !== undefined && { customUserDataDir: env('CUSTOM_USER_DATA_DIR') }),
   
   createOptions: {
     ...originalConfig.createOptions,
-    ...(env('AUTO_CLOSE') && { autoClose: numericEnv('AUTO_CLOSE', 0) }),
-    ...(env('DEVICE_SYNC_TIMEOUT') && { deviceSyncTimeout: numericEnv('DEVICE_SYNC_TIMEOUT', 0) }),
+    ...(env('AUTO_CLOSE') !== undefined && { autoClose: numericEnv('AUTO_CLOSE', 60000) }),
+    ...(env('DEVICE_SYNC_TIMEOUT') !== undefined && { deviceSyncTimeout: numericEnv('DEVICE_SYNC_TIMEOUT', 120000) }),
+    ...(env('HEADLESS') !== undefined && { headless: boolEnv('HEADLESS', true) }),
     puppeteerOptions: {
       ...originalConfig.createOptions.puppeteerOptions,
-      ...(env('PUPPETEER_EXECUTABLE_PATH') && { executablePath: env('PUPPETEER_EXECUTABLE_PATH') })
+      ...(env('PUPPETEER_EXECUTABLE_PATH') !== undefined && { executablePath: env('PUPPETEER_EXECUTABLE_PATH') })
     }
   }
 };
