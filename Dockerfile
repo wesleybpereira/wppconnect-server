@@ -117,14 +117,16 @@ const runtimeConfig = {
   
   createOptions: {
     ...originalConfig.createOptions,
-    // Define headless explicitamente (padrão do WPPConnect é true se não definido)
-    headless: env('HEADLESS') !== undefined ? boolEnv('HEADLESS', true) : true,
+    // Sobrescreve apenas se env var existir (!== undefined)
+    ...(env('HEADLESS') !== undefined && { headless: boolEnv('HEADLESS', true) }),
     ...(env('AUTO_CLOSE') !== undefined && { autoClose: numericEnv('AUTO_CLOSE', 60000) }),
     ...(env('DEVICE_SYNC_TIMEOUT') !== undefined && { deviceSyncTimeout: numericEnv('DEVICE_SYNC_TIMEOUT', 120000) }),
-    puppeteerOptions: {
-      ...originalConfig.createOptions.puppeteerOptions,
-      ...(env('PUPPETEER_EXECUTABLE_PATH') !== undefined && { executablePath: env('PUPPETEER_EXECUTABLE_PATH') })
-    }
+    ...(env('PUPPETEER_EXECUTABLE_PATH') !== undefined && {
+      puppeteerOptions: {
+        ...originalConfig.createOptions.puppeteerOptions,
+        executablePath: env('PUPPETEER_EXECUTABLE_PATH')
+      }
+    })
   }
 };
 
