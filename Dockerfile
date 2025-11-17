@@ -98,7 +98,7 @@ RUN cd /usr/src/wpp-server && \
     node -e "const fs=require('fs'); \
     const file='dist/util/createSessionUtil.js'; \
     let content=fs.readFileSync(file,'utf8'); \
-    const lockRemovalCode='const lockFiles=[\"SingletonLock\",\"SingletonCookie\",\"SingletonSocket\"];const userDataDir=req.serverOptions.customUserDataDir+session;lockFiles.forEach(f=>{try{const p=require(\"path\").join(userDataDir,f);if(require(\"fs\").existsSync(p)){require(\"fs\").unlinkSync(p);}}catch(e){}});'; \
+    const lockRemovalCode='const lockFiles=[\"SingletonLock\",\"SingletonCookie\",\"SingletonSocket\"];const userDataDir=req.serverOptions.createOptions?.puppeteerOptions?.userDataDir||req.serverOptions.customUserDataDir+session;lockFiles.forEach(f=>{try{const p=require(\"path\").join(userDataDir,f);if(require(\"fs\").existsSync(p)){require(\"fs\").unlinkSync(p);console.log(\"[PATCH] Removed Chrome lock:\",p);}}catch(e){console.error(\"[PATCH] Error removing lock:\",e.message);}});'; \
     content=content.replace( \
       /const wppClient = await \(0, _wppconnect.create\)\(/, \
       lockRemovalCode+'const wppClient = await (0, _wppconnect.create)(' \
