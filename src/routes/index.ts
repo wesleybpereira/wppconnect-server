@@ -208,6 +208,24 @@ routes.post(
   MessageController.sendButtons
 );
 routes.post(
+  '/api/:session/send-interactive-buttons',
+  verifyToken,
+  statusConnection,
+  MessageController.sendInteractiveButtons
+);
+routes.post(
+  '/api/:session/reply-button',
+  verifyToken,
+  statusConnection,
+  MessageController.replyButton
+);
+routes.post(
+  '/api/:session/detect-buttons',
+  verifyToken,
+  statusConnection,
+  MessageController.detectButtonsInMessage
+);
+routes.post(
   '/api/:session/send-list-message',
   verifyToken,
   statusConnection,

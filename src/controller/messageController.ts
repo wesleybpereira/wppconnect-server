@@ -16,6 +16,12 @@
 
 import { Request, Response } from 'express';
 
+import {
+  SendButtonsRequest,
+  ReplyButtonRequest,
+  ButtonResponse,
+  MessageWithButtons,
+} from '../types/ButtonTypes';
 import { unlinkAsync } from '../util/functions';
 
 function returnError(req: Request, res: Response, error: any) {
@@ -1036,3 +1042,354 @@ export async function sendImageAsStickerGif(req: Request, res: Response) {
     returnError(req, res, error);
   }
 }
+
+export async function sendInteractiveButtons(req: Request, res: Response) {
+  /**
+   * #swagger.tags = ["Messages"]
+     #swagger.autoBody=false
+     #swagger.security = [{
+            "bearerAuth": []
+     }]
+     #swagger.parameters["session"] = {
+      schema: 'NERDWHATS_AMERICA'
+     }
+     #swagger.requestBody = {
+      required: true,
+      "@content": {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              phone: { type: "array", items: { type: "string" } },
+              isGroup: { type: "boolean" },
+              message: { type: "string" },
+              header: { type: "string" },
+              footer: { type: "string" },
+              buttons: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    title: { type: "string" }
+                  }
+                }
+              }
+            }
+          },
+          examples: {
+            "Send interactive buttons": {
+              value: {
+                phone: ['5521999999999'],
+                isGroup: false,
+                message: 'Choose an option:',
+                header: 'Welcome!',
+                footer: 'Powered by WPPConnect',
+                buttons: [
+                  { id: 'btn_1', title: 'Option 1' },
+                  { id: 'btn_2', title: 'Option 2' },
+                  { id: 'btn_3', title: 'Option 3' }
+                ]
+              }
+            }
+          }
+        }
+      }
+     }
+   */
+  const requestData: SendButtonsRequest = req.body;
+  const { phone, message, buttons, header, footer, options = {} } = requestData;
+
+  // Validações
+  if (!buttons || buttons.length === 0) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'At least one button is required',
+    });
+  }
+
+  if (buttons.length > 3) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Maximum of 3 buttons allowed',
+    });
+  }
+
+  // Validar título dos botões
+  for (const button of buttons) {
+    if (!button.id || !button.title) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Each button must have an id and title',
+      });
+    }
+    if (button.title.length > 20) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Button title "${button.title}" exceeds 20 characters`,
+      });
+    }
+  }
+
+  try {
+    const phoneArray = Array.isArray(phone) ? phone : [phone];
+    const results: any = [];
+
+    for (const contact of phoneArray) {
+      // Tentar usar sendButtons do WPPConnect se disponível
+      if (typeof req.client.sendButtons === 'function') {
+        results.push(
+          await req.client.sendButtons(contact, {
+            body: message,
+            header: header,
+            footer: footer,
+            buttons: buttons.map((btn) => ({
+              id: btn.id,
+              text: btn.title,
+            })),
+            ...options,
+          })
+        );
+      } else {
+        // Fallback: enviar como mensagem de texto com opções numeradas
+        req.logger.warn(
+          'sendButtons not available, falling back to text message'
+        );
+        
+        let textMessage = message;
+        if (header) textMessage = `*${header}*\n\n${textMessage}`;
+        
+        textMessage += '\n\n';
+        buttons.forEach((btn, index) => {
+          textMessage += `${index + 1}. ${btn.title}\n`;
+        });
+        
+        if (footer) textMessage += `\n_${footer}_`;
+
+        results.push(await req.client.sendText(contact, textMessage, options));
+      }
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Error sending interactive buttons',
+      });
+    }
+
+    req.io.emit('interactive-buttons-sent', results);
+    returnSucess(res, results);
+  } catch (error) {
+    returnError(req, res, error);
+  }
+}
+
+export async function replyButton(req: Request, res: Response) {
+  /**
+   * #swagger.tags = ["Messages"]
+     #swagger.autoBody=false
+     #swagger.security = [{
+            "bearerAuth": []
+     }]
+     #swagger.parameters["session"] = {
+      schema: 'NERDWHATS_AMERICA'
+     }
+     #swagger.requestBody = {
+      required: true,
+      "@content": {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              phone: { type: "array", items: { type: "string" } },
+              isGroup: { type: "boolean" },
+              buttonId: { type: "string" },
+              buttonTitle: { type: "string" },
+              messageId: { type: "string" }
+            }
+          },
+          examples: {
+            "Reply to button": {
+              value: {
+                phone: ['5521999999999'],
+                isGroup: false,
+                buttonId: 'btn_1',
+                buttonTitle: 'Option 1',
+                messageId: 'true_5521999999999@c.us_3EB0XXX'
+              }
+            }
+          }
+        }
+      }
+     }
+   */
+  const requestData: ReplyButtonRequest = req.body;
+  const {
+    phone,
+    buttonId,
+    buttonTitle,
+    messageId,
+    options = {},
+  } = requestData;
+
+  if (!buttonId || !buttonTitle) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'buttonId and buttonTitle are required',
+    });
+  }
+
+  try {
+    const phoneArray = Array.isArray(phone) ? phone : [phone];
+    const results: any = [];
+
+    for (const contact of phoneArray) {
+      // Tentar enviar button_reply
+      if (typeof req.client.sendButtonResponse === 'function') {
+        results.push(
+          await req.client.sendButtonResponse(contact, {
+            buttonId: buttonId,
+            buttonText: buttonTitle,
+            messageId: messageId,
+            ...options,
+          })
+        );
+      } else if (typeof (req.client as any).sendReplyButton === 'function') {
+        results.push(
+          await (req.client as any).sendReplyButton(
+            contact,
+            buttonId,
+            buttonTitle,
+            messageId
+          )
+        );
+      } else {
+        // Fallback: enviar como mensagem de texto simples
+        req.logger.warn(
+          'Button reply not available, falling back to text message'
+        );
+        
+        const textMessage = buttonTitle;
+        
+        if (messageId) {
+          results.push(
+            await req.client.reply(contact, textMessage, messageId)
+          );
+        } else {
+          results.push(await req.client.sendText(contact, textMessage, options));
+        }
+      }
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Error replying to button',
+      });
+    }
+
+    req.io.emit('button-reply-sent', results);
+    returnSucess(res, results);
+  } catch (error) {
+    returnError(req, res, error);
+  }
+}
+
+export async function detectButtonsInMessage(req: Request, res: Response) {
+  /**
+   * #swagger.tags = ["Messages"]
+     #swagger.autoBody=false
+     #swagger.security = [{
+            "bearerAuth": []
+     }]
+     #swagger.parameters["session"] = {
+      schema: 'NERDWHATS_AMERICA'
+     }
+     #swagger.requestBody = {
+      required: true,
+      "@content": {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              messageId: { type: "string" }
+            }
+          },
+          examples: {
+            "Detect buttons": {
+              value: {
+                messageId: 'true_5521999999999@c.us_3EB0XXX'
+              }
+            }
+          }
+        }
+      }
+     }
+   */
+  const { messageId } = req.body;
+
+  if (!messageId) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'messageId is required',
+    });
+  }
+
+  try {
+    const message = await req.client.getMessageById(messageId);
+
+    if (!message) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Message not found',
+      });
+    }
+
+    // Detectar botões na mensagem
+    const hasButtons =
+      message.type === 'buttons' ||
+      message.type === 'list' ||
+      (message.buttons && message.buttons.length > 0) ||
+      (message.listResponse && message.listResponse.singleSelectReply);
+
+    let buttons: any[] = [];
+
+    if (hasButtons) {
+      if (message.buttons && Array.isArray(message.buttons)) {
+        buttons = message.buttons.map((btn: any) => ({
+          id: btn.id || btn.buttonId,
+          title: btn.displayText || btn.text || btn.title,
+          type: btn.type || 'reply',
+        }));
+      } else if (message.type === 'list' && message.list) {
+        // Para list messages
+        buttons = message.list.sections?.flatMap((section: any) =>
+          section.rows?.map((row: any) => ({
+            id: row.rowId,
+            title: row.title,
+            type: 'list_reply',
+          }))
+        ) || [];
+      }
+    }
+
+    const response: MessageWithButtons = {
+      hasButtons,
+      buttons,
+      message: {
+        id: message.id,
+        type: message.type,
+        from: message.from,
+        timestamp: message.timestamp,
+      },
+    };
+
+    res.status(200).json({
+      status: 'success',
+      response,
+    });
+  } catch (error) {
+    returnError(req, res, error);
+  }
+}
+
