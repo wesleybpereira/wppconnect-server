@@ -1345,25 +1345,26 @@ export async function detectButtonsInMessage(req: Request, res: Response) {
       });
     }
 
-    // Detectar botões na mensagem
+    // Detectar botões na mensagem (usando any para evitar erros de tipo)
+    const messageAny = message as any;
     const hasButtons =
-      message.type === 'buttons' ||
-      message.type === 'list' ||
-      (message.buttons && message.buttons.length > 0) ||
-      (message.listResponse && message.listResponse.singleSelectReply);
+      messageAny.type === 'buttons' ||
+      messageAny.type === 'list' ||
+      (messageAny.buttons && messageAny.buttons.length > 0) ||
+      (messageAny.listResponse && messageAny.listResponse.singleSelectReply);
 
     let buttons: any[] = [];
 
     if (hasButtons) {
-      if (message.buttons && Array.isArray(message.buttons)) {
-        buttons = message.buttons.map((btn: any) => ({
+      if (messageAny.buttons && Array.isArray(messageAny.buttons)) {
+        buttons = messageAny.buttons.map((btn: any) => ({
           id: btn.id || btn.buttonId,
           title: btn.displayText || btn.text || btn.title,
           type: btn.type || 'reply',
         }));
-      } else if (message.type === 'list' && message.list) {
+      } else if (messageAny.type === 'list' && messageAny.list) {
         // Para list messages
-        buttons = message.list.sections?.flatMap((section: any) =>
+        buttons = messageAny.list.sections?.flatMap((section: any) =>
           section.rows?.map((row: any) => ({
             id: row.rowId,
             title: row.title,

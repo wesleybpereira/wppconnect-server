@@ -51,25 +51,28 @@ export async function replyWithButtonFallback(
     let result: any = null;
     let success = false;
 
+    // Cast para any para acessar métodos que podem não estar tipados
+    const clientAny = client as any;
+
     // Tentar diferentes métodos disponíveis
-    if (typeof client.sendButtonResponse === 'function') {
-      result = await client.sendButtonResponse(phone, {
+    if (typeof clientAny.sendButtonResponse === 'function') {
+      result = await clientAny.sendButtonResponse(phone, {
         buttonId: buttonId,
         buttonText: buttonTitle,
         messageId: messageId,
       });
       success = true;
-    } else if (typeof (client as any).sendReplyButton === 'function') {
-      result = await (client as any).sendReplyButton(
+    } else if (typeof clientAny.sendReplyButton === 'function') {
+      result = await clientAny.sendReplyButton(
         phone,
         buttonId,
         buttonTitle,
         messageId
       );
       success = true;
-    } else if (typeof (client as any).sendButtons === 'function') {
+    } else if (typeof clientAny.sendButtons === 'function') {
       // Alguns clientes podem ter um método genérico
-      result = await (client as any).sendButtons(phone, {
+      result = await clientAny.sendButtons(phone, {
         type: 'reply',
         buttonId: buttonId,
         buttonText: buttonTitle,
