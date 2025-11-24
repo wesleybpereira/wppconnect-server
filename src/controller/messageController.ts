@@ -1135,11 +1135,14 @@ export async function sendInteractiveButtons(req: Request, res: Response) {
     const phoneArray = Array.isArray(phone) ? phone : [phone];
     const results: any = [];
 
+    // Cast para any para acessar métodos que podem não estar tipados
+    const clientAny = req.client as any;
+
     for (const contact of phoneArray) {
       // Tentar usar sendButtons do WPPConnect se disponível
-      if (typeof req.client.sendButtons === 'function') {
+      if (typeof clientAny.sendButtons === 'function') {
         results.push(
-          await req.client.sendButtons(contact, {
+          await clientAny.sendButtons(contact, {
             body: message,
             header: header,
             footer: footer,
@@ -1243,20 +1246,23 @@ export async function replyButton(req: Request, res: Response) {
     const phoneArray = Array.isArray(phone) ? phone : [phone];
     const results: any = [];
 
+    // Cast para any para acessar métodos que podem não estar tipados
+    const clientAny = req.client as any;
+
     for (const contact of phoneArray) {
       // Tentar enviar button_reply
-      if (typeof req.client.sendButtonResponse === 'function') {
+      if (typeof clientAny.sendButtonResponse === 'function') {
         results.push(
-          await req.client.sendButtonResponse(contact, {
+          await clientAny.sendButtonResponse(contact, {
             buttonId: buttonId,
             buttonText: buttonTitle,
             messageId: messageId,
             ...options,
           })
         );
-      } else if (typeof (req.client as any).sendReplyButton === 'function') {
+      } else if (typeof clientAny.sendReplyButton === 'function') {
         results.push(
-          await (req.client as any).sendReplyButton(
+          await clientAny.sendReplyButton(
             contact,
             buttonId,
             buttonTitle,
