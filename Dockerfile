@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y \
     libvips-dev \
     build-essential \
     python3 \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Instala Google Chrome
@@ -78,7 +79,7 @@ RUN yarn install --pure-lockfile --ignore-engines && \
 # Build do projeto
 RUN yarn build
 
-# Aplica patches para corrigir bugs do upstream
+# Aplica patches para corrigir bugs e problemas de Chrome locks
 COPY patches/ /tmp/patches/
 RUN cd /usr/src/wpp-server && \
     # Patch 1: Fix close-session
@@ -94,15 +95,24 @@ RUN cd /usr/src/wpp-server && \
       'if (!clientsArray[session] || clientsArray[session].status === null)' \
     ); \
     fs.writeFileSync(file,content);" && \
-    # Patch 2: Remove Chrome locks before browser launch
+    # Patch 2: Remove Chrome locks ANTES de iniciar browser (força limpeza em CADA inicialização)
     node -e "const fs=require('fs'); \
+    const path=require('path'); \
     const file='dist/util/createSessionUtil.js'; \
     let content=fs.readFileSync(file,'utf8'); \
-    const lockRemovalCode='const lockFiles=[\"SingletonLock\",\"SingletonCookie\",\"SingletonSocket\"];const userDataDir=req.serverOptions.createOptions?.puppeteerOptions?.userDataDir||req.serverOptions.customUserDataDir+session;lockFiles.forEach(f=>{try{const p=require(\"path\").join(userDataDir,f);if(require(\"fs\").existsSync(p)){require(\"fs\").unlinkSync(p);console.log(\"[PATCH] Removed Chrome lock:\",p);}}catch(e){console.error(\"[PATCH] Error removing lock:\",e.message);}});'; \
+    const lockRemovalCode='const path=require(\"path\");const fs=require(\"fs\");const lockPatterns=[\"SingletonLock\",\"SingletonCookie\",\"SingletonSocket\",\"lockfile\"];const userDataDir=req.serverOptions.createOptions?.puppeteerOptions?.userDataDir||(req.serverOptions.customUserDataDir?path.join(req.serverOptions.customUserDataDir,session):null);if(userDataDir){console.log(\"[CHROME-FIX] Cleaning locks in:\",userDataDir);lockPatterns.forEach(pattern=>{try{const lockPath=path.join(userDataDir,pattern);if(fs.existsSync(lockPath)){const stat=fs.lstatSync(lockPath);if(stat.isSymbolicLink()){fs.unlinkSync(lockPath);console.log(\"[CHROME-FIX] Removed symlink:\",pattern);}else if(stat.isFile()){fs.unlinkSync(lockPath);console.log(\"[CHROME-FIX] Removed file:\",pattern);}}}catch(e){console.log(\"[CHROME-FIX] Lock\",pattern,\"not found or already removed\");}});}else{console.warn(\"[CHROME-FIX] Could not determine userDataDir for lock cleanup\");}'; \
     content=content.replace( \
-      /const wppClient = await \(0, _wppconnect.create\)\(/, \
+      /const wppClient = await \(0, _wppconnect\.create\)\(/g, \
       lockRemovalCode+'const wppClient = await (0, _wppconnect.create)(' \
     ); \
+    fs.writeFileSync(file,content);" && \
+    # Patch 3: Adiciona limpeza de locks também no server startup (garante limpeza global)
+    node -e "const fs=require('fs'); \
+    const file='dist/server.js'; \
+    let content=fs.readFileSync(file,'utf8'); \
+    const startupLockCleanup='const path=require(\"path\");const fs=require(\"fs\");function cleanAllChromeLocks(){const config=require(\"./config-runtime\")||require(\"./config\");const baseDir=config.customUserDataDir||\"./userDataDir/\";console.log(\"[STARTUP] Cleaning all Chrome locks in:\",baseDir);try{if(fs.existsSync(baseDir)){const sessions=fs.readdirSync(baseDir).filter(f=>fs.statSync(path.join(baseDir,f)).isDirectory());sessions.forEach(session=>{const sessionDir=path.join(baseDir,session);[\"SingletonLock\",\"SingletonCookie\",\"SingletonSocket\",\"lockfile\"].forEach(lock=>{try{const lockPath=path.join(sessionDir,lock);if(fs.existsSync(lockPath)){const stat=fs.lstatSync(lockPath);if(stat.isSymbolicLink()||stat.isFile()){fs.unlinkSync(lockPath);console.log(\"[STARTUP] Removed\",lock,\"from\",session);}}}catch(e){}});});}}catch(e){console.error(\"[STARTUP] Error cleaning locks:\",e.message);}}cleanAllChromeLocks();'; \
+    const serverStartRegex=/const app = \(0, _express\.default\)\(\);/; \
+    if(serverStartRegex.test(content)){content=content.replace(serverStartRegex,startupLockCleanup+'const app = (0, _express.default)();');}else{console.log(\"[PATCH3] Warning: Could not find server startup point, skip global lock cleanup\");} \
     fs.writeFileSync(file,content);"
 
 # Cria wrapper que injeta variáveis de ambiente em runtime (após build)
@@ -171,9 +181,13 @@ RUN find dist -type f -name "*.js" -exec sed -i \
     -e "s|from ['\"]\\.\\./ config['\"]|from '../config-runtime'|g" \
     {} \;
 
+# Copia e configura entrypoint customizado
+COPY docker-entrypoint.sh /usr/src/wpp-server/
+RUN chmod +x /usr/src/wpp-server/docker-entrypoint.sh
+
 EXPOSE 21465
 
 # Healthcheck removido - Dokploy/Traefik fará o health check via HTTP
 # Se necessário, configure no Dokploy: GET http://container:21465/api/health
 
-ENTRYPOINT ["node", "dist/server.js"]
+ENTRYPOINT ["/usr/src/wpp-server/docker-entrypoint.sh"]
