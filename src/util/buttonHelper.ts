@@ -54,15 +54,52 @@ export async function replyWithButtonFallback(
     // Cast para any para acessar métodos que podem não estar tipados
     const clientAny = client as any;
 
-    // Tentar diferentes métodos disponíveis
-    if (typeof clientAny.sendButtonResponse === 'function') {
+    // Método 1: Tentar enviar mensagem interativa do tipo button_reply
+    if (typeof clientAny.sendRawMessage === 'function') {
+      try {
+        // Estrutura de button_reply conforme WhatsApp Business API
+        const interactiveMessage = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: phone,
+          type: 'interactive',
+          interactive: {
+            type: 'button_reply',
+            button_reply: {
+              id: buttonId,
+              title: buttonTitle,
+            },
+          },
+        };
+
+        // Se tiver messageId, adiciona contexto
+        if (messageId) {
+          (interactiveMessage as any).context = {
+            message_id: messageId,
+          };
+        }
+
+        result = await clientAny.sendRawMessage(phone, interactiveMessage);
+        success = true;
+        logger.info('Button reply sent via sendRawMessage (interactive format)');
+      } catch (rawError: any) {
+        logger.warn(`sendRawMessage failed: ${rawError.message}`);
+      }
+    }
+
+    // Método 2: Tentar sendButtonResponse (se existir)
+    if (!success && typeof clientAny.sendButtonResponse === 'function') {
       result = await clientAny.sendButtonResponse(phone, {
         buttonId: buttonId,
         buttonText: buttonTitle,
         messageId: messageId,
       });
       success = true;
-    } else if (typeof clientAny.sendReplyButton === 'function') {
+      logger.info('Button reply sent via sendButtonResponse');
+    }
+    
+    // Método 3: Tentar sendReplyButton
+    else if (!success && typeof clientAny.sendReplyButton === 'function') {
       result = await clientAny.sendReplyButton(
         phone,
         buttonId,
@@ -70,8 +107,11 @@ export async function replyWithButtonFallback(
         messageId
       );
       success = true;
-    } else if (typeof clientAny.sendButtons === 'function') {
-      // Alguns clientes podem ter um método genérico
+      logger.info('Button reply sent via sendReplyButton');
+    }
+    
+    // Método 4: Tentar sendButtons genérico
+    else if (!success && typeof clientAny.sendButtons === 'function') {
       result = await clientAny.sendButtons(phone, {
         type: 'reply',
         buttonId: buttonId,
@@ -79,10 +119,10 @@ export async function replyWithButtonFallback(
         messageId: messageId,
       });
       success = true;
+      logger.info('Button reply sent via sendButtons');
     }
 
     if (success && result) {
-      logger.info('Button reply sent successfully');
       return {
         success: true,
         method: 'button_reply',
